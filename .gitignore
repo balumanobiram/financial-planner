@@ -1,0 +1,48 @@
+# ---- Secrets / environment ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Personal financial data (never commit) ----
+*.csv
+*.xlsx
+*.xls
+*.ofx
+*.qif
+data/
+exports/
+backups/
+*.dump
+*.sql.gz
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---- Node / Vite ----
+node_modules/
+dist/
+*.local
+.vite/
+npm-debug.log*
+
+# ---- Deploy tooling ----
+.vercel/
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
