@@ -3,6 +3,10 @@
 from typing import Any
 
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from tests.conftest import FakeFetcher
 
 NEW_ACCOUNT = {
     "bank_name": "HDFC Bank",
@@ -124,3 +128,45 @@ class TestReconcileApi:
         account = create(api)
         response = api.post(f"/accounts/{account['id']}/reconcile", json={"actual_balance": "12.345"})
         assert response.status_code == 422
+
+
+class TestBankLogo:
+    def test_logo_guessed_and_fetched_on_create(self, api: TestClient, fetcher: FakeFetcher) -> None:
+        account = create(api)  # bank_name "HDFC Bank"
+
+        assert account["bank_domain"] == "hdfcbank.com"
+        assert account["logo_data_url"].startswith("data:image/png;base64,")
+        assert fetcher.calls == ["hdfcbank.com"]
+
+    def test_account_and_card_share_one_stored_logo(self, api: TestClient, fetcher: FakeFetcher) -> None:
+        create(api)
+        card = api.post(
+            "/cards",
+            json={"bank_name": "HDFC Bank", "card_name": "Regalia", "network": "visa", "statement_day": 12, "payment_due_days": 20},
+        ).json()
+
+        assert fetcher.calls == ["hdfcbank.com"]  # fetched once, reused by the card
+        assert card["logo_data_url"] is not None
+
+    def test_explicit_website_is_cleaned(self, api: TestClient, fetcher: FakeFetcher) -> None:
+        account = create(api, bank_name="Neighbourhood Bank", bank_domain="https://www.ICICIBank.com/")
+        assert account["bank_domain"] == "icicibank.com"
+
+    def test_unknown_bank_has_no_logo_and_no_request(self, api: TestClient, fetcher: FakeFetcher) -> None:
+        account = create(api, bank_name="Local Co-op")
+        assert (account["bank_domain"], account["logo_data_url"]) == (None, None)
+        assert fetcher.calls == []
+
+    def test_refresh_logo_fills_in_old_accounts(self, api: TestClient, db_session: Session, fetcher: FakeFetcher) -> None:
+        # Simulate an account created before logos existed: no domain stored.
+        account = create(api)
+        db_session.execute(text("UPDATE bank_accounts SET bank_domain = NULL"))
+        db_session.execute(text("DELETE FROM bank_logos"))
+
+        refreshed = api.post(f"/accounts/{account['id']}/refresh-logo").json()
+
+        assert refreshed["bank_domain"] == "hdfcbank.com"
+        assert refreshed["logo_data_url"] is not None
+
+    def test_invalid_website_rejected(self, api: TestClient) -> None:
+        assert api.post("/accounts", json={**NEW_ACCOUNT, "bank_domain": "not a site"}).status_code == 422

@@ -9,7 +9,7 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function StatCardSkeleton() {
   return (
-    <Card className="flex items-center gap-4 p-4 sm:p-5">
+    <Card flush className="flex items-center gap-4 p-4 sm:p-5">
       <Skeleton className="size-11 rounded-full" />
       <div className="flex-1 space-y-2">
         <Skeleton className="h-3 w-24" />

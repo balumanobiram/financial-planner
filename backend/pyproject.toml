@@ -2,6 +2,6 @@
 pythonpath = ["."]
 testpaths = ["tests"]
 filterwarnings = [
-    # Starlette's TestClient prefers httpx2; plain httpx still works. Remove once we switch.
-    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
+    # SQLAlchemy warnings usually mean a real ordering/session bug — fail the test instead.
+    "error::sqlalchemy.exc.SAWarning",
 ]

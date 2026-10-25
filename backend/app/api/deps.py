@@ -3,7 +3,7 @@
 Use them as type hints in route signatures: `def route(db: DbSession, now: Now): ...`
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated
 
 import jwt
@@ -14,6 +14,8 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings, get_settings
 from app.core.db import get_db
 from app.core.security import decode_access_token
+from app.core.time import today_ist
+from app.services.logos import LogoFetcher, fetch_logo
 
 
 def get_now() -> datetime:
@@ -22,6 +24,22 @@ def get_now() -> datetime:
 
 
 Now = Annotated[datetime, Depends(get_now)]
+
+
+def get_today(now: Now) -> date:
+    """Today's calendar date in India (billing dates are IST days)."""
+    return today_ist(now)
+
+
+Today = Annotated[date, Depends(get_today)]
+
+
+def get_logo_fetcher() -> LogoFetcher:
+    """Outbound logo download; tests override this so they never touch the network."""
+    return fetch_logo
+
+
+Fetcher = Annotated[LogoFetcher, Depends(get_logo_fetcher)]
 DbSession = Annotated[Session, Depends(get_db)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 

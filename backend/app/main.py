@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from app.api.router import protected_router, public_router
 from app.core.config import get_settings
 from app.core.login_throttle import LoginThrottle
-from app.services.errors import ConflictError, NotFoundError
+from app.services.errors import ConflictError, InvalidInputError, NotFoundError
 
 
 def create_app() -> FastAPI:
@@ -30,6 +30,10 @@ def create_app() -> FastAPI:
     @app.exception_handler(ConflictError)
     def _conflict(_: Request, exc: ConflictError) -> JSONResponse:
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
+
+    @app.exception_handler(InvalidInputError)
+    def _invalid(_: Request, exc: InvalidInputError) -> JSONResponse:
+        return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content={"detail": str(exc)})
 
     app.include_router(public_router)
     app.include_router(protected_router)

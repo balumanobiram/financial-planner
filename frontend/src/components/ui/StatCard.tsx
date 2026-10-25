@@ -39,7 +39,7 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <Card className={cn("flex items-center gap-4 p-4 sm:p-5", className)}>
+    <Card flush className={cn("flex items-center gap-4 p-4 sm:p-5", className)}>
       <span className={cn("grid size-11 shrink-0 place-items-center rounded-full", tints[tint])}>
         <Icon className="size-5" aria-hidden />
       </span>

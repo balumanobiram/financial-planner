@@ -15,6 +15,7 @@ type ModalProps = {
  * Centered dialog on desktop, bottom sheet on phones.
  * Built on the native <dialog>: focus trapping, Esc-to-close and screen-reader
  * semantics come from the browser. Content only mounts while open, so forms reset.
+ * Mark the field to focus first with `data-autofocus` (not `autoFocus`).
  */
 export function Modal({ open, onClose, title, description, children, footer }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -23,7 +24,11 @@ export function Modal({ open, onClose, title, description, children, footer }: M
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // React's autoFocus runs before the dialog opens (and is lost), so focus the marked field here.
+      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 

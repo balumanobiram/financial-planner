@@ -8,7 +8,7 @@ from typing import Annotated, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models import AccountType
-from app.schemas.common import BlankToNone, MoneyAmount
+from app.schemas.common import BankDomain, BlankToNone, MoneyAmount
 
 Name = Annotated[str, Field(min_length=1, max_length=100)]
 # Constraints sit on the inner `str` so they are skipped once a blank value has become None.
@@ -28,6 +28,7 @@ class BankAccountCreate(_Input):
     opening_balance: MoneyAmount = Decimal("0.00")
     opening_date: date
     notes: Notes = None
+    bank_domain: BankDomain = Field(default=None, description="Bank website for the logo; guessed from bank_name if empty")
 
 
 class BankAccountUpdate(_Input):
@@ -40,6 +41,7 @@ class BankAccountUpdate(_Input):
     opening_balance: MoneyAmount | None = None
     opening_date: date | None = None
     notes: Notes = None
+    bank_domain: BankDomain = None
 
     @model_validator(mode="after")
     def _required_fields_not_null(self) -> Self:
@@ -58,7 +60,9 @@ class BankAccountRead(BaseModel):
     opening_balance: Decimal
     opening_date: date
     notes: str | None
+    bank_domain: str | None
     is_archived: bool
+    logo_data_url: str | None = Field(description="Bank icon as a data: URL, or null -> show a monogram")
     current_balance: Decimal
     created_at: datetime
     updated_at: datetime

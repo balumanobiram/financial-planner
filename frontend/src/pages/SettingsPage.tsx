@@ -7,6 +7,7 @@ import { Page } from "../components/layout/Page";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Skeleton } from "../components/ui/Skeleton";
+import { CategoriesCard } from "../features/categories/CategoriesCard";
 
 export function SettingsPage() {
   const { data: me, isPending } = useMe();
@@ -27,6 +28,8 @@ export function SettingsPage() {
             </Button>
           </div>
         </Card>
+
+        <CategoriesCard />
 
         <Card>
           <h2 className="text-lg font-semibold">Design</h2>

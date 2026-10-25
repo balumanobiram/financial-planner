@@ -13,5 +13,13 @@ class ConflictError(DomainError):
     """→ 409: the request is valid but conflicts with current state."""
 
 
-class ArchivedAccountError(ConflictError):
-    """Raised when trying to change an archived account."""
+class ArchivedError(ConflictError):
+    """Raised when trying to change an archived account, card, person, ..."""
+
+
+class ArchivedAccountError(ArchivedError):
+    """Raised when trying to change an archived bank account."""
+
+
+class InvalidInputError(DomainError):
+    """→ 422: the request is well-formed but breaks a business rule (e.g. shares exceed the spend)."""

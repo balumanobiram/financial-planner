@@ -61,3 +61,27 @@ export function Button({
     </button>
   );
 }
+
+type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
+  /** Required: icon-only buttons need a text label for screen readers. */
+  label: string;
+  icon: ReactNode;
+};
+
+export function IconButton({ label, icon, type = "button", className, ...rest }: IconButtonProps) {
+  return (
+    <button
+      type={type}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-surface-muted hover:text-ink",
+        "focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50",
+        className,
+      )}
+      {...rest}
+    >
+      {icon}
+    </button>
+  );
+}

@@ -6,7 +6,7 @@ import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { login } from "../api/auth";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { TextField } from "../components/ui/TextField";
+import { TextField } from "../components/ui/Field";
 import { APP_NAME } from "../config";
 import { ApiError } from "../lib/api";
 import { getToken, safeNextPath, saveAuth } from "../lib/auth";
@@ -57,7 +57,7 @@ export function LoginPage() {
           <span className="text-xl font-bold">{APP_NAME}</span>
         </div>
 
-        <Card className="p-6 sm:p-7">
+        <Card flush className="p-6 sm:p-7">
           <h1 className="text-xl font-bold">Welcome back</h1>
           <p className="mt-1 text-sm text-muted">Log in to see your money.</p>
 

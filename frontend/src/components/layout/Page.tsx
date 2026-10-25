@@ -7,7 +7,7 @@ import { Button } from "../ui/Button";
 type PageProps = {
   title: string;
   subtitle?: string;
-  /** Primary "Add" action: a header button on desktop, a floating + button on phones. */
+  /** The page's own "Add" (account, card…): a header button; icon-only on phones. The floating + is always Quick add. */
   onAdd?: () => void;
   addLabel?: string;
   /** Extra header controls (desktop and mobile). */
@@ -30,28 +30,20 @@ export function Page({ title, subtitle, onAdd, addLabel = "Add", actions, childr
         <div className="flex shrink-0 items-center gap-2">
           {actions}
           {onAdd && (
-            // Wrapper does the hiding: Button's own `inline-flex` would override a `hidden` class.
-            <span className="hidden lg:contents">
-              <Button onClick={onAdd} icon={<Plus className="size-4" aria-hidden />} iconPosition="right">
-                {addLabel}
-              </Button>
-            </span>
+            <Button
+              onClick={onAdd}
+              aria-label={addLabel}
+              icon={<Plus className="size-4" aria-hidden />}
+              iconPosition="right"
+              className="max-sm:w-10 max-sm:gap-0 max-sm:px-0"
+            >
+              <span className="max-sm:sr-only">{addLabel}</span>
+            </Button>
           )}
         </div>
       </header>
 
       {children}
-
-      {onAdd && (
-        <button
-          type="button"
-          onClick={onAdd}
-          aria-label={addLabel}
-          className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 grid size-14 place-items-center rounded-full bg-accent text-accent-fg shadow-lg shadow-sidebar/20 transition-transform active:scale-95 lg:hidden"
-        >
-          <Plus className="size-6" aria-hidden />
-        </button>
-      )}
     </>
   );
 }

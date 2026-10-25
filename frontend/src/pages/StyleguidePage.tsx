@@ -14,7 +14,7 @@ import { Money } from "../components/ui/Money";
 import { ListSkeleton, Loading, StatCardSkeleton } from "../components/ui/Skeleton";
 import { StatCard } from "../components/ui/StatCard";
 import { StatusPill, type Status } from "../components/ui/StatusPill";
-import { TextField } from "../components/ui/TextField";
+import { TextField } from "../components/ui/Field";
 import { formatDate } from "../lib/dates";
 
 // ---- Sample data (not real) -------------------------------------------------
@@ -220,7 +220,7 @@ export function StyleguidePage() {
         }
       >
         <div className="space-y-4">
-          <TextField label="Bank name" placeholder="HDFC Bank" autoFocus />
+          <TextField label="Bank name" placeholder="HDFC Bank" data-autofocus />
           <TextField label="Nickname" placeholder="Salary" />
           <TextField label="Opening balance (₹)" placeholder="0.00" inputMode="decimal" />
         </div>

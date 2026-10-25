@@ -6,7 +6,7 @@ from sqlalchemy import DateTime, Numeric, Table, Uuid
 from app.models import Base
 
 TABLES = list(Base.metadata.sorted_tables)
-ARCHIVABLE = {"bank_accounts"}  # add "cards", "people" as they arrive
+ARCHIVABLE = {"bank_accounts", "credit_cards", "people", "categories"}
 
 
 @pytest.mark.parametrize("table", TABLES, ids=lambda t: t.name)

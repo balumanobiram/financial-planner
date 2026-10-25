@@ -6,7 +6,7 @@ they never fall back to DATABASE_URL.
 """
 
 import os
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -44,10 +44,11 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import delete  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
+from app.api.deps import get_logo_fetcher  # noqa: E402
 from app.core.db import get_db  # noqa: E402
 from app.core.security import create_access_token  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.models import BankAccount, Transaction  # noqa: E402
+from app.models import BankAccount, BankLogo, CreditCard, ExpenseShare, ImportMapping, Person, Transaction  # noqa: E402
 
 
 @pytest.fixture
@@ -84,8 +85,8 @@ def db_session() -> Iterator[Session]:
     with engine.connect() as connection:
         outer = connection.begin()
         session = Session(bind=connection, join_transaction_mode="create_savepoint", expire_on_commit=False)
-        session.execute(delete(Transaction))
-        session.execute(delete(BankAccount))
+        for model in (ExpenseShare, Transaction, ImportMapping, BankAccount, CreditCard, BankLogo, Person):
+            session.execute(delete(model))
         try:
             yield session
         finally:
@@ -93,10 +94,45 @@ def db_session() -> Iterator[Session]:
             outer.rollback()
 
 
+FAKE_LOGO = b"\x89PNG-fake"
+
+
+class FakeFetcher:
+    """Stands in for the real logo download so API tests never touch the network."""
+
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+        self.result: tuple[str, bytes] | None = ("image/png", FAKE_LOGO)
+
+    def __call__(self, domain: str) -> tuple[str, bytes] | None:
+        self.calls.append(domain)
+        return self.result
+
+
 @pytest.fixture
-def api(app: FastAPI, db_session: Session, auth_headers: dict[str, str]) -> Iterator[TestClient]:
-    """Authenticated client whose requests use the rolled-back test session."""
-    app.dependency_overrides[get_db] = lambda: db_session
+def fetcher() -> FakeFetcher:
+    return FakeFetcher()
+
+
+def db_override(session: Session) -> Callable[[], Iterator[Session]]:
+    """Like the real get_db, but every request shares the test session. A failed request rolls
+    back to the last commit (a SAVEPOINT here), exactly as a fresh session would discard it."""
+
+    def override() -> Iterator[Session]:
+        try:
+            yield session
+        except Exception:
+            session.rollback()
+            raise
+
+    return override
+
+
+@pytest.fixture
+def api(app: FastAPI, db_session: Session, auth_headers: dict[str, str], fetcher: FakeFetcher) -> Iterator[TestClient]:
+    """Authenticated, offline client whose requests use the rolled-back test session."""
+    app.dependency_overrides[get_db] = db_override(db_session)
+    app.dependency_overrides[get_logo_fetcher] = lambda: fetcher
     with TestClient(app, headers=auth_headers) as test_client:
         yield test_client
     app.dependency_overrides.clear()

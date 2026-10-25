@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ArrowLeftRight, CreditCard, Landmark, LayoutDashboard, Users } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import { Navigate, createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 
@@ -8,7 +8,6 @@ import { RequireAuth } from "./components/layout/RequireAuth";
 import { queryClient } from "./lib/queryClient";
 import { LoginPage } from "./pages/LoginPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
-import { SettingsPage } from "./pages/SettingsPage";
 
 // Client-side route table (≈ @RequestMapping). Everything inside <RequireAuth> needs a login.
 const router = createBrowserRouter([
@@ -24,28 +23,22 @@ const router = createBrowserRouter([
         index: true,
         element: <PlaceholderPage title="Dashboard" icon={LayoutDashboard} description="Balances, dues and spending at a glance." />,
       },
+      // Each page is its own chunk, downloaded the first time you open it (keeps the first load small).
+      { path: "accounts", lazy: async () => ({ Component: (await import("./features/accounts/AccountsPage")).AccountsPage }) },
+      { path: "cards", lazy: async () => ({ Component: (await import("./features/cards/CardsPage")).CardsPage }) },
+      { path: "people", lazy: async () => ({ Component: (await import("./features/people/PeoplePage")).PeoplePage }) },
       {
-        path: "accounts",
-        element: <PlaceholderPage title="Accounts" icon={Landmark} description="Your bank accounts and wallets — next step." />,
-      },
-      {
-        path: "cards",
-        element: <PlaceholderPage title="Cards" icon={CreditCard} description="Credit cards, statements and due dates." />,
-      },
-      {
-        path: "people",
-        element: <PlaceholderPage title="People" icon={Users} description="Who owes whom, and settlements." />,
+        path: "people/:personId",
+        lazy: async () => ({ Component: (await import("./features/people/PersonDetailPage")).PersonDetailPage }),
       },
       {
         path: "transactions",
-        element: <PlaceholderPage title="Transactions" icon={ArrowLeftRight} description="Every rupee in and out." />,
+        lazy: async () => ({ Component: (await import("./features/transactions/TransactionsPage")).TransactionsPage }),
       },
-      { path: "settings", element: <SettingsPage /> },
-      {
-        path: "styleguide",
-        // Loaded on demand so the chart library isn't in the main bundle.
-        lazy: async () => ({ Component: (await import("./pages/StyleguidePage")).StyleguidePage }),
-      },
+      { path: "import", lazy: async () => ({ Component: (await import("./features/imports/ImportPage")).ImportPage }) },
+      { path: "settings", lazy: async () => ({ Component: (await import("./pages/SettingsPage")).SettingsPage }) },
+      // Also keeps the chart library out of the main bundle.
+      { path: "styleguide", lazy: async () => ({ Component: (await import("./pages/StyleguidePage")).StyleguidePage }) },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

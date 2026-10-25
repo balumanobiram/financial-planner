@@ -34,5 +34,7 @@ class BankAccount(ArchivableMixin, BaseEntity):
     opening_balance: Mapped[Money] = mapped_column(default=Decimal("0.00"), server_default="0")
     opening_date: Mapped[date]
     notes: Mapped[str | None] = mapped_column(Text)
+    # Bank website, used to fetch its logo (shared with cards via bank_logos.domain).
+    bank_domain: Mapped[str | None] = mapped_column(String(255))
 
     transactions: Mapped[list[Transaction]] = relationship(back_populates="account")

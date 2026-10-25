@@ -38,8 +38,40 @@ export function formatDateTime(isoTimestamp: string): string {
   return dateTimeFormat.format(date);
 }
 
+const timestampDateFormat = new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: APP_TIME_ZONE,
+});
+
+/** UTC timestamp → its IST calendar date, e.g. "2026-09-30T18:30:00Z" → "1 Oct 2026" */
+export function formatTimestampDate(isoTimestamp: string): string {
+  const date = new Date(isoTimestamp);
+  if (Number.isNaN(date.getTime())) throw new Error(`Invalid timestamp: "${isoTimestamp}"`);
+  return timestampDateFormat.format(date);
+}
+
 /** Today's date in IST as "YYYY-MM-DD" (for date inputs). */
 export function todayIST(now: Date = new Date()): string {
   // en-CA formats as YYYY-MM-DD.
   return new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIME_ZONE }).format(now);
+}
+
+const shortDateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+
+/** "2026-11-01" → "1 Nov" (no year — for near-term dates like due dates). */
+export function formatDateShort(isoDate: string): string {
+  const match = DATE_ONLY_RE.exec(isoDate);
+  if (!match) throw new Error(`Invalid date: "${isoDate}"`);
+  const [, y, m, d] = match;
+  return shortDateFormat.format(new Date(Date.UTC(Number(y), Number(m) - 1, Number(d))));
+}
+
+/** "2026-03-01" shifted by n days → "2026-02-28" (pure calendar maths, no time zones). */
+export function shiftDate(isoDate: string, days: number): string {
+  const match = DATE_ONLY_RE.exec(isoDate);
+  if (!match) throw new Error(`Invalid date: "${isoDate}"`);
+  const [, y, m, d] = match;
+  return new Date(Date.UTC(Number(y), Number(m) - 1, Number(d) + days)).toISOString().slice(0, 10);
 }

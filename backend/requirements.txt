@@ -8,3 +8,6 @@ alembic==1.20.1
 psycopg[binary]==3.3.6
 PyJWT==2.15.1
 bcrypt==5.0.0
+httpx2==2.16.0  # outbound HTTP (bank logo fetch); also used by FastAPI's TestClient
+pandas==3.1.0  # statement import: tabulating CSV / reading XLSX (in memory)
+openpyxl==3.1.5  # XLSX engine for pandas
