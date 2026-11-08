@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 
-import { apiFetch } from "../lib/api";
+import { apiDownload, apiFetch } from "../lib/api";
 import { useInvalidateMoney } from "./invalidate";
 
 export type ImportSource = { account_id: string } | { card_id: string };
@@ -19,6 +19,7 @@ export type ColumnMapping = {
   drcr_column: string | null;
   debit_column: string | null;
   credit_column: string | null;
+  category_column: string | null; // optional: names matched to your categories, ignoring case
 };
 
 export type ImportPreview = {
@@ -39,6 +40,8 @@ export type ParsedRow = {
   amount: string | null; // signed: negative = money out
   error: string | null;
   duplicate: { transaction_id: string; description: string | null; type: string } | null;
+  category_name: string | null; // as written in the file
+  category_id: string | null; // your matching category, or null if the name matched none
 };
 
 export type ParseResult = {
@@ -80,4 +83,9 @@ export function useCommitImport() {
       apiFetch<{ created: number; mapping_saved: boolean }>("/imports/commit", { method: "POST", body }),
     onSuccess: invalidate,
   });
+}
+
+/** The blank Excel sheet for logging a month by hand (its headings map themselves on upload). */
+export function useDownloadTemplate() {
+  return useMutation({ mutationFn: () => apiDownload("/imports/template") });
 }

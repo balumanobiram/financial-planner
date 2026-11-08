@@ -254,3 +254,14 @@ def test_mapping_needs_the_columns_for_its_mode() -> None:
         ColumnMapping(header_row=0, date_column="Date", description_columns=["D"], amount_mode="split", debit_column="Out")
     with pytest.raises(ValueError, match="date format"):
         ColumnMapping(header_row=0, date_column="Date", description_columns=["D"], amount_mode="single", amount_column="A", date_format="%Q")
+
+
+def test_category_column_is_read_and_suggested() -> None:
+    grid = [["Date", "Description", "Debit (money out)", "Credit (money in)", "Category"],
+            ["02/11/2026", "Swiggy", "450", "", "  food "], ["03/11/2026", "Bus", "30", "", ""]]
+    mapping = sp.suggest_mapping(sp.column_names(grid, 0), 0, is_card=False)
+    assert mapping is not None
+    assert (mapping.amount_mode, mapping.debit_column, mapping.credit_column, mapping.category_column) == (
+        "split", "Debit (money out)", "Credit (money in)", "Category",
+    )
+    assert [line.category for line in sp.parse_rows(grid, mapping, TODAY)] == ["food", None]

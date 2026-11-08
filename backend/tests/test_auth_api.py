@@ -59,3 +59,9 @@ def test_cors_allows_frontend_origin_only(client: TestClient) -> None:
 
     assert preflight("http://localhost:5173").headers.get("access-control-allow-origin") == "http://localhost:5173"
     assert "access-control-allow-origin" not in preflight("https://evil.example").headers
+
+
+def test_cors_exposes_download_filename(client: TestClient) -> None:
+    """The frontend (another origin) must be able to read the PDF filename from Content-Disposition."""
+    response = client.get("/health", headers={"Origin": "http://localhost:5173"})
+    assert response.headers.get("access-control-expose-headers") == "Content-Disposition"

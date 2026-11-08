@@ -4,6 +4,8 @@ import { cn } from "../../lib/cn";
 import { Button } from "./Button";
 
 type HeroCardProps = {
+  /** Small label above the title, e.g. "Next card bill". */
+  eyebrow?: string;
   title: string;
   subtitle?: string;
   ctaLabel?: string;
@@ -12,7 +14,7 @@ type HeroCardProps = {
 };
 
 /** Dark gradient call-to-action card with a decorative ribbon shape. */
-export function HeroCard({ title, subtitle, ctaLabel, onCta, className }: HeroCardProps) {
+export function HeroCard({ eyebrow, title, subtitle, ctaLabel, onCta, className }: HeroCardProps) {
   return (
     <div
       className={cn(
@@ -23,6 +25,7 @@ export function HeroCard({ title, subtitle, ctaLabel, onCta, className }: HeroCa
     >
       <RibbonShape className="pointer-events-none absolute -top-8 -left-10 -z-10 w-64" />
       <div>
+        {eyebrow && <p className="mb-1 text-xs font-semibold tracking-wide text-white/70 uppercase">{eyebrow}</p>}
         <h3 className="text-xl leading-snug font-bold text-balance">{title}</h3>
         {subtitle && <p className="mt-2 text-sm text-white/70">{subtitle}</p>}
       </div>

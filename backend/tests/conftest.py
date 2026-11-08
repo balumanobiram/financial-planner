@@ -48,7 +48,7 @@ from app.api.deps import get_logo_fetcher  # noqa: E402
 from app.core.db import get_db  # noqa: E402
 from app.core.security import create_access_token  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.models import BankAccount, BankLogo, CreditCard, ExpenseShare, ImportMapping, Person, Transaction  # noqa: E402
+from app.models import BankAccount, BankLogo, CreditCard, ExpenseShare, ImportMapping, MonthlySnapshot, Person, Transaction  # noqa: E402
 
 
 @pytest.fixture
@@ -85,7 +85,7 @@ def db_session() -> Iterator[Session]:
     with engine.connect() as connection:
         outer = connection.begin()
         session = Session(bind=connection, join_transaction_mode="create_savepoint", expire_on_commit=False)
-        for model in (ExpenseShare, Transaction, ImportMapping, BankAccount, CreditCard, BankLogo, Person):
+        for model in (ExpenseShare, Transaction, ImportMapping, MonthlySnapshot, BankAccount, CreditCard, BankLogo, Person):
             session.execute(delete(model))
         try:
             yield session

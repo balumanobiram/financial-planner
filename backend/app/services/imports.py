@@ -108,6 +108,12 @@ def parse(session: Session, req: ParseRequest, today: date) -> ParseResponse:
         candidates = [Candidate(line.row_number, line.occurred_on, line.amount, line.description) for line in good]  # type: ignore[arg-type]
         dupes = find_duplicates(candidates, _existing(session, req.source, first, last))
 
+    # Category names from the file → your active categories, ignoring case and extra spaces.
+    by_name: dict[str, uuid.UUID] = {}
+    if req.mapping.category_column:
+        active = session.execute(select(Category.name, Category.id).where(Category.is_archived.is_(False)))
+        by_name = {name.casefold(): cid for name, cid in active}
+
     rows = [
         ParsedRow(
             row_number=line.row_number,
@@ -120,6 +126,8 @@ def parse(session: Session, req: ParseRequest, today: date) -> ParseResponse:
                 if (d := dupes.get(line.row_number))
                 else None
             ),
+            category_name=line.category,
+            category_id=by_name.get(line.category.casefold()) if line.category else None,
         )
         for line in lines
     ]

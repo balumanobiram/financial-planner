@@ -50,6 +50,7 @@ export function MappingStep({ preview, mapping: initial, from, sourceName, reloa
     tag(m.debit_column, "Money out");
     tag(m.credit_column, "Money in");
   }
+  tag(m.category_column, "Category");
 
   const columnOptions = (
     <>
@@ -217,6 +218,21 @@ export function MappingStep({ preview, mapping: initial, from, sourceName, reloa
             </SelectField>
           </div>
         )}
+
+        <SelectField
+          label="Category column (optional)"
+          className="sm:max-w-sm"
+          value={m.category_column ?? ""}
+          onChange={(e) => set("category_column", e.target.value || null)}
+          hint="Names are matched to your categories; you can change any of them in the next step."
+        >
+          <option value="">None — I'll pick categories in the next step</option>
+          {preview.columns.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </SelectField>
       </Card>
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">

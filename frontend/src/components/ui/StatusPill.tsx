@@ -10,8 +10,10 @@ const styles: Record<Status, { className: string; label: string }> = {
   open: { className: "bg-surface-muted text-muted ring-1 ring-line", label: "Open" },
 };
 
-export function StatusPill({ status, className }: { status: Status; className?: string }) {
-  const { className: colors, label } = styles[status];
+/** `label` overrides the default text while keeping the status colours (e.g. "Paid late" in amber). */
+export function StatusPill({ status, label: text, className }: { status: Status; label?: string; className?: string }) {
+  const { className: colors, label: defaultLabel } = styles[status];
+  const label = text ?? defaultLabel;
   return (
     <span
       className={cn(

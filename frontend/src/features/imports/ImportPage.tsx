@@ -1,4 +1,4 @@
-import { ArrowLeft, CircleCheck, FileSpreadsheet, ShieldCheck, Upload } from "lucide-react";
+import { ArrowLeft, CircleCheck, Download, FileSpreadsheet, ShieldCheck, Upload } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 
@@ -6,6 +6,7 @@ import { useAccounts } from "../../api/accounts";
 import { useCards } from "../../api/cards";
 import {
   useParseImport,
+  useDownloadTemplate,
   usePreviewImport,
   type ColumnMapping,
   type ImportFile,
@@ -18,6 +19,7 @@ import { Card } from "../../components/ui/Card";
 import { SelectField } from "../../components/ui/Field";
 import { Notice } from "../../components/ui/Notice";
 import { cn } from "../../lib/cn";
+import { saveBlob } from "../../lib/download";
 import { base64FromDataUrl, checkFile, defaultSelection, importSource, initialMapping } from "./importForm";
 import { MappingStep } from "./MappingStep";
 import { ReviewStep } from "./ReviewStep";
@@ -51,6 +53,7 @@ export function ImportPage() {
   const cards = useCards();
   const previewImport = usePreviewImport();
   const parseImport = useParseImport();
+  const template = useDownloadTemplate();
 
   const [step, setStep] = useState<Step>("file");
   const [source, setSource] = useState(initialSource);
@@ -173,6 +176,24 @@ export function ImportPage() {
             </label>
             {fileError && <Notice tone="error">{fileError}</Notice>}
             {previewImport.isError && <Notice tone="error">{previewImport.error.message}</Notice>}
+
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-tint-blue/60 px-4 py-3">
+              <FileSpreadsheet className="size-5 shrink-0 text-tint-blue-fg" aria-hidden />
+              <p className="min-w-0 flex-1 text-sm">
+                <span className="font-semibold">Logging a month by hand?</span> Fill one row per transaction in our Excel template, then
+                choose it above. Its Category column lists your categories.
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={template.isPending}
+                icon={<Download className="size-3.5" aria-hidden />}
+                onClick={() => template.mutate(undefined, { onSuccess: ({ blob, filename }) => saveBlob(blob, filename ?? "planner-import-template.xlsx") })}
+              >
+                Download template
+              </Button>
+            </div>
+            {template.isError && <Notice tone="error">Couldn't download the template: {template.error.message}</Notice>}
 
             <p className="flex items-start gap-2 text-xs text-muted">
               <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />

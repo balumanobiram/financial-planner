@@ -7,6 +7,7 @@ from app.models.category import Category, CategoryKind
 from app.models.credit_card import CardNetwork, CreditCard
 from app.models.expense_share import ExpenseShare
 from app.models.import_mapping import ImportMapping
+from app.models.monthly_snapshot import MonthlySnapshot
 from app.models.person import Person
 from app.models.transaction import Transaction, TransactionKind
 
@@ -21,6 +22,7 @@ __all__ = [
     "CreditCard",
     "ExpenseShare",
     "ImportMapping",
+    "MonthlySnapshot",
     "Person",
     "Transaction",
     "TransactionKind",

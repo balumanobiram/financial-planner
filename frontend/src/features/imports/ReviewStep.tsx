@@ -9,7 +9,7 @@ import { Notice } from "../../components/ui/Notice";
 import { cn } from "../../lib/cn";
 import { formatDate } from "../../lib/dates";
 import { formatINR } from "../../lib/money";
-import { buildCommit, filterRows, isImportable, selectionTotals, type ReviewTab } from "./importForm";
+import { buildCommit, categoriesFromFile, filterRows, isImportable, selectionTotals, unknownCategoryNames, type ReviewTab } from "./importForm";
 
 type Props = {
   parsed: ParseResult;
@@ -30,10 +30,11 @@ export function ReviewStep({ parsed, mapping, source, sourceName, selected, onSe
   const categories = useCategories();
   const [tab, setTab] = useState<ReviewTab>("all");
   const [shown, setShown] = useState(PAGE);
-  const [rowCategory, setRowCategory] = useState<Record<number, string>>({});
+  const [rowCategory, setRowCategory] = useState<Record<number, string>>(() => categoriesFromFile(parsed.rows));
   const [bulkCategory, setBulkCategory] = useState("");
 
   const { rows, summary } = parsed;
+  const unknown = unknownCategoryNames(rows);
   const visible = filterRows(rows, tab, selected);
   const totals = selectionTotals(rows, selected);
   const activeCategories = (categories.data?.items ?? []).filter((c) => !c.is_archived);
@@ -77,6 +78,12 @@ export function ReviewStep({ parsed, mapping, source, sourceName, selected, onSe
       {summary.duplicates > 0 && (
         <Notice tone="success">
           {summary.duplicates} {summary.duplicates === 1 ? "row looks" : "rows look"} like {summary.duplicates === 1 ? "an entry" : "entries"} already in {sourceName} — left unticked. Tick any that are really new.
+        </Notice>
+      )}
+      {unknown.length > 0 && (
+        <Notice tone="error">
+          {unknown.length === 1 ? "This category name" : "These category names"} didn't match any of yours: {unknown.join(", ")}. Those rows have no category
+          until you pick one (or add the category in Settings and check the rows again).
         </Notice>
       )}
       {commit.isError && <Notice tone="error">{commit.error.message}</Notice>}
@@ -233,6 +240,9 @@ function ReviewRow({
             <CircleAlert className="size-3.5 shrink-0" aria-hidden />
             {r.error}
           </p>
+        )}
+        {r.category_name && !r.category_id && (
+          <p className="mt-1 text-xs font-medium text-pill-duesoon-fg">No category called “{r.category_name}” — pick one below or leave it blank.</p>
         )}
         {r.duplicate && (
           <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-pill-duesoon-fg">

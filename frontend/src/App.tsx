@@ -1,5 +1,4 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { LayoutDashboard } from "lucide-react";
 import { Navigate, createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 
@@ -7,7 +6,6 @@ import { AppShell } from "./components/layout/AppShell";
 import { RequireAuth } from "./components/layout/RequireAuth";
 import { queryClient } from "./lib/queryClient";
 import { LoginPage } from "./pages/LoginPage";
-import { PlaceholderPage } from "./pages/PlaceholderPage";
 
 // Client-side route table (≈ @RequestMapping). Everything inside <RequireAuth> needs a login.
 const router = createBrowserRouter([
@@ -19,10 +17,8 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      {
-        index: true,
-        element: <PlaceholderPage title="Dashboard" icon={LayoutDashboard} description="Balances, dues and spending at a glance." />,
-      },
+      // Lazy like the other pages; it also pulls in the chart library, which the login page doesn't need.
+      { index: true, lazy: async () => ({ Component: (await import("./features/dashboard/DashboardPage")).DashboardPage }) },
       // Each page is its own chunk, downloaded the first time you open it (keeps the first load small).
       { path: "accounts", lazy: async () => ({ Component: (await import("./features/accounts/AccountsPage")).AccountsPage }) },
       { path: "cards", lazy: async () => ({ Component: (await import("./features/cards/CardsPage")).CardsPage }) },
@@ -35,6 +31,7 @@ const router = createBrowserRouter([
         path: "transactions",
         lazy: async () => ({ Component: (await import("./features/transactions/TransactionsPage")).TransactionsPage }),
       },
+      { path: "reports", lazy: async () => ({ Component: (await import("./features/reports/ReportsPage")).ReportsPage }) },
       { path: "import", lazy: async () => ({ Component: (await import("./features/imports/ImportPage")).ImportPage }) },
       { path: "settings", lazy: async () => ({ Component: (await import("./pages/SettingsPage")).SettingsPage }) },
       // Also keeps the chart library out of the main bundle.

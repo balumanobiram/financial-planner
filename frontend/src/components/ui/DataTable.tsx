@@ -16,6 +16,8 @@ export type Column<T> = {
   cell: (row: T) => ReactNode;
   align?: "left" | "right";
   mobile?: MobileSlot;
+  /** false = phones only (e.g. folded into another column's cell on desktop). */
+  desktop?: boolean;
 };
 
 type DataTableProps<T> = {
@@ -28,6 +30,7 @@ type DataTableProps<T> = {
 
 export function DataTable<T>({ columns, rows, rowKey, caption }: DataTableProps<T>) {
   const slot = (name: MobileSlot) => columns.filter((c) => (c.mobile ?? "hidden") === name);
+  const tableColumns = columns.filter((c) => c.desktop !== false);
 
   return (
     <>
@@ -37,7 +40,7 @@ export function DataTable<T>({ columns, rows, rowKey, caption }: DataTableProps<
           <caption className="sr-only">{caption}</caption>
           <thead>
             <tr>
-              {columns.map((c) => (
+              {tableColumns.map((c) => (
                 <th
                   key={c.key}
                   scope="col"
@@ -54,7 +57,7 @@ export function DataTable<T>({ columns, rows, rowKey, caption }: DataTableProps<
           <tbody>
             {rows.map((row) => (
               <tr key={rowKey(row)} className="border-t border-line">
-                {columns.map((c) => (
+                {tableColumns.map((c) => (
                   <td
                     key={c.key}
                     className={cn(

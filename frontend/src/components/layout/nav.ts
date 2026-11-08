@@ -23,7 +23,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Cards", to: "/cards", icon: CreditCard },
   { label: "People", to: "/people", icon: Users },
   { label: "Transactions", to: "/transactions", icon: ArrowLeftRight },
-  { label: "Reports", to: "/reports", icon: ChartColumn, soon: true },
+  { label: "Reports", to: "/reports", icon: ChartColumn },
   { label: "Settings", to: "/settings", icon: Settings },
 ];
 

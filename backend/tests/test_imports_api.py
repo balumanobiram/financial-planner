@@ -188,3 +188,54 @@ def test_unknown_columns_and_archived_sources(api: TestClient, account: dict[str
     ok(api.post(f"/accounts/{account['id']}/archive"), 200)
     assert api.post("/imports/preview", json={"file": upload(BANK_CSV), "source": source}).status_code == 409
     assert api.get("/imports/mapping").status_code == 422
+
+
+# ---- The fill-in template ---------------------------------------------------------------------
+
+
+def test_template_download_fill_and_import(api: TestClient, account: dict[str, Any]) -> None:
+    import io
+    from datetime import datetime
+
+    from openpyxl import load_workbook
+
+    response = api.get("/imports/template")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    assert response.headers["content-disposition"] == 'attachment; filename="planner-import-template.xlsx"'
+
+    wb = load_workbook(io.BytesIO(response.content))
+    ws = wb["Transactions"]
+    assert [c.value for c in ws[1]] == ["Date", "Description", "Debit (money out)", "Credit (money in)", "Category"]
+    assert ws.max_row == 501 and all(c.value is None for c in ws[2])  # formatted but empty: no sample rows to import
+    assert wb["Categories"].sheet_state == "hidden" and wb["Categories"]["A2"].value == "Food"
+    assert any("Categories!" in str(v.formula1) for v in ws.data_validations.dataValidation)
+
+    # Fill it in as a person would in Excel: real date cells, numbers, a dropdown pick, a typo.
+    for row, values in enumerate([
+        (datetime(2026, 10, 1), "Salary", None, 85000, "Salary"),
+        (datetime(2026, 10, 2), "Swiggy dinner", 450, None, "food"),  # case doesn't matter
+        (datetime(2026, 10, 3), "Mystery", 99.5, None, "Fooood"),  # no such category
+    ], start=2):
+        for col, value in enumerate(values, start=1):
+            ws.cell(row, col, value)
+    buf = io.BytesIO()
+    wb.save(buf)
+    file = {"filename": "october.xlsx", "content_base64": base64.b64encode(buf.getvalue()).decode()}
+    source = {"account_id": account["id"]}
+
+    mapping = ok(api.post("/imports/preview", json={"file": file, "source": source}))["suggested_mapping"]
+    assert (mapping["header_row"], mapping["amount_mode"], mapping["category_column"]) == (0, "split", "Category")
+
+    parsed = ok(api.post("/imports/parse", json={"file": file, "source": source, "mapping": mapping}))
+    cats = {c["name"]: c["id"] for c in ok(api.get("/categories"))["items"]}
+    assert [(r["amount"], r["category_name"], r["category_id"]) for r in parsed["rows"]] == [
+        ("85000.00", "Salary", cats["Salary"]),
+        ("-450.00", "food", cats["Food"]),
+        ("-99.50", "Fooood", None),
+    ]
+    rows = [{"occurred_on": r["occurred_on"], "description": r["description"], "amount": r["amount"], "category_id": r["category_id"]}
+            for r in parsed["rows"]]
+    assert ok(api.post("/imports/commit", json={"source": source, "mapping": mapping, "rows": rows}), 201)["created"] == 3
+    imported = {t["description"]: t for t in ok(api.get("/transactions", params={"account_id": account["id"]}))["items"]}
+    assert (imported["Swiggy dinner"]["category"]["name"], imported["Salary"]["type"]) == ("Food", "income")

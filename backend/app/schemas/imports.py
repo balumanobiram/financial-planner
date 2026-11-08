@@ -65,6 +65,7 @@ class ColumnMapping(_Input):
     # split: separate withdrawal / deposit columns
     debit_column: OptionalColumn = None
     credit_column: OptionalColumn = None
+    category_column: OptionalColumn = Field(default=None, description="Optional: category names, matched to yours ignoring case")
 
     @model_validator(mode="after")
     def _columns_for_mode(self) -> Self:
@@ -113,6 +114,8 @@ class ParsedRow(BaseModel):
     amount: Decimal | None = Field(description="Signed: negative = money out")
     error: str | None = Field(description="Why this row can't be imported (e.g. a totals line)")
     duplicate: DuplicateRef | None = Field(description="An existing transaction this looks like")
+    category_name: str | None = Field(default=None, description="As written in the file's category column")
+    category_id: uuid.UUID | None = Field(default=None, description="Your matching category; null if the name matched none")
 
 
 class ParseSummary(BaseModel):

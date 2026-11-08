@@ -8,6 +8,7 @@
 # ---- Personal financial data (never commit) ----
 *.csv
 *.xlsx
+*.pdf
 *.xls
 *.ofx
 *.qif

@@ -5,7 +5,7 @@ Add new feature routers to `protected_router` — they are secured automatically
 
 from fastapi import APIRouter, Depends
 
-from app.api import accounts, auth, cards, categories, health, imports, people, transactions
+from app.api import accounts, auth, cards, categories, dashboard, health, imports, people, reports, transactions
 from app.api.deps import require_user
 
 public_router = APIRouter()
@@ -20,3 +20,5 @@ protected_router.include_router(people.router)
 protected_router.include_router(categories.router)
 protected_router.include_router(transactions.router)
 protected_router.include_router(imports.router)
+protected_router.include_router(dashboard.router)
+protected_router.include_router(reports.router)

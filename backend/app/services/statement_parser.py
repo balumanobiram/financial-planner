@@ -151,9 +151,10 @@ def suggest_mapping(columns: list[str], header_row: int, *, is_card: bool) -> Co
     credit = _find(columns, r"deposit", r"^credit", r"\bcredit amount", r"^cr\.?( amount)?$", exclude=r"debit")
     amount = _find(columns, r"^amount", r"amount", r"^amt", exclude=r"balance")
     drcr = _find(columns, r"^(dr|cr) ?/ ?(cr|dr)$", r"^debit ?/ ?credit$", r"^(txn |transaction )?type$")
+    category = _find(columns, r"^category")
     if not date_col:
         return None
-    common = {"header_row": header_row, "date_column": date_col, "description_columns": [desc or date_col]}
+    common = {"header_row": header_row, "date_column": date_col, "description_columns": [desc or date_col], "category_column": category}
     if debit and credit and debit != credit:
         return ColumnMapping(**common, amount_mode="split", debit_column=debit, credit_column=credit)
     if amount:
@@ -244,6 +245,7 @@ class ParsedLine:
     description: str | None
     amount: Decimal | None  # signed: negative = money out
     error: str | None
+    category: str | None = None  # the category column's text, if mapped
 
 
 def parse_rows(grid: Grid, mapping: ColumnMapping, today: date) -> list[ParsedLine]:
@@ -251,7 +253,7 @@ def parse_rows(grid: Grid, mapping: ColumnMapping, today: date) -> list[ParsedLi
     else that isn't a transaction (opening balance, totals…) comes back with an `error`."""
     columns = column_names(grid, mapping.header_row)
     wanted = [mapping.date_column, *mapping.description_columns, mapping.amount_column, mapping.drcr_column,
-              mapping.debit_column, mapping.credit_column]
+              mapping.debit_column, mapping.credit_column, mapping.category_column]
     missing = sorted({c for c in wanted if c and c not in columns})
     if missing:
         raise InvalidInputError(f"Column(s) not in this file: {', '.join(missing)}")
@@ -281,7 +283,8 @@ def parse_rows(grid: Grid, mapping: ColumnMapping, today: date) -> list[ParsedLi
             error = "Date is in the future"
         elif error is None and amount is None:
             error = "No amount"
-        lines.append(ParsedLine(row_number, occurred_on, description, amount, error))
+        category = " ".join(cell(row, mapping.category_column).split()) or None
+        lines.append(ParsedLine(row_number, occurred_on, description, amount, error, category))
     return lines
 
 

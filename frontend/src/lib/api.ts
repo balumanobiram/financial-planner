@@ -26,8 +26,27 @@ type RequestOptions = {
   auth?: boolean;
 };
 
-export async function apiFetch<T>(path: string, { method = "GET", body, signal, auth = true }: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = { Accept: "application/json" };
+export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const response = await request(path, options);
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+/** A file download (e.g. a PDF): the body as a Blob plus the server's suggested filename. */
+export async function apiDownload(path: string, options: RequestOptions = {}): Promise<{ blob: Blob; filename: string | null }> {
+  const response = await request(path, options);
+  return { blob: await response.blob(), filename: filenameFrom(response.headers.get("Content-Disposition")) };
+}
+
+/** 'attachment; filename="finance-report-2026-10.pdf"' → "finance-report-2026-10.pdf". */
+export function filenameFrom(disposition: string | null): string | null {
+  const match = disposition && /filename="?([^";]+)"?/i.exec(disposition);
+  return match ? match[1] : null;
+}
+
+/** Shared by JSON and file requests: auth header, network errors, 401 → login, non-2xx → ApiError. */
+async function request(path: string, { method = "GET", body, signal, auth = true }: RequestOptions): Promise<Response> {
+  const headers: Record<string, string> = { Accept: "application/json, application/pdf" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
   if (auth) {
@@ -59,8 +78,7 @@ export async function apiFetch<T>(path: string, { method = "GET", body, signal, 
   if (!response.ok) {
     throw new ApiError(response.status, await readErrorMessage(response));
   }
-  if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  return response;
 }
 
 function redirectToLogin(): void {

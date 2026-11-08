@@ -1,6 +1,7 @@
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
+from sqlalchemy import select
 
 from app.api.deps import DbSession, Today
 from app.schemas.imports import (
@@ -13,7 +14,9 @@ from app.schemas.imports import (
     PreviewResponse,
 )
 from app.schemas.transactions import SourceIn
+from app.models import Category
 from app.services import imports as service
+from app.services.import_template import build_template
 from app.services.errors import InvalidInputError
 
 router = APIRouter(prefix="/imports", tags=["imports"])
@@ -45,3 +48,18 @@ def get_mapping(db: DbSession, account_id: uuid.UUID | None = None, card_id: uui
     if (account_id is None) == (card_id is None):
         raise InvalidInputError("Pass exactly one of account_id or card_id")
     return service.saved_mapping(db, SourceIn(account_id=account_id, card_id=card_id))
+
+
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+@router.get("/template", response_class=Response, responses={200: {"content": {XLSX: {}}}})
+def template(db: DbSession) -> Response:
+    """A blank Excel sheet to fill with a month of transactions and upload via preview/parse/commit.
+    Its Category column offers your active categories as a dropdown."""
+    names = list(db.scalars(select(Category.name).where(Category.is_archived.is_(False)).order_by(Category.sort_order, Category.name)))
+    return Response(
+        content=build_template(names),
+        media_type=XLSX,
+        headers={"Content-Disposition": 'attachment; filename="planner-import-template.xlsx"', "Cache-Control": "no-store"},
+    )

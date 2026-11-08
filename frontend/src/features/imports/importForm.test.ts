@@ -5,6 +5,7 @@ import {
   base64FromDataUrl,
   blankMapping,
   buildCommit,
+  categoriesFromFile,
   checkFile,
   cleanMapping,
   defaultSelection,
@@ -13,6 +14,7 @@ import {
   initialMapping,
   mappingErrors,
   selectionTotals,
+  unknownCategoryNames,
 } from "./importForm";
 
 const split: ColumnMapping = {
@@ -43,6 +45,8 @@ const row = (n: number, over: Partial<ParsedRow> = {}): ParsedRow => ({
   amount: "-100.00",
   error: null,
   duplicate: null,
+  category_name: null,
+  category_id: null,
   ...over,
 });
 
@@ -145,5 +149,23 @@ describe("review", () => {
         { occurred_on: "2026-10-01", description: "row 9", amount: "-100.00", category_id: null },
       ],
     });
+  });
+});
+
+describe("categories from the file", () => {
+  it("pre-selects recognised names and lists unknown ones once", () => {
+    const rows = [
+      row(2, { category_name: "food", category_id: "cat-food" }),
+      row(3, { category_name: "Fooood", category_id: null }),
+      row(4, { category_name: "Fooood", category_id: null }),
+      row(5, { category_name: null, category_id: null }),
+    ];
+    expect(categoriesFromFile(rows)).toEqual({ 2: "cat-food" });
+    expect(unknownCategoryNames(rows)).toEqual(["Fooood"]);
+  });
+
+  it("a saved mapping whose category column is gone falls back to the suggestion", () => {
+    const result = initialMapping(preview({ saved_mapping: { ...split, category_column: "Gone" }, suggested_mapping: split }), false);
+    expect(result.from).toBe("suggested");
   });
 });

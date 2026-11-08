@@ -42,6 +42,7 @@ export function blankMapping(headerRow: number, isCard: boolean): ColumnMapping 
     drcr_column: null,
     debit_column: null,
     credit_column: null,
+    category_column: null,
   };
 }
 
@@ -51,7 +52,7 @@ export function blankMapping(headerRow: number, isCard: boolean): ColumnMapping 
  */
 export function initialMapping(preview: ImportPreview, isCard: boolean): { mapping: ColumnMapping; from: "saved" | "suggested" | "blank" } {
   const fits = (m: ColumnMapping) =>
-    [m.date_column, ...m.description_columns, m.amount_column, m.debit_column, m.credit_column, m.drcr_column]
+    [m.date_column, ...m.description_columns, m.amount_column, m.debit_column, m.credit_column, m.drcr_column, m.category_column]
       .filter((c): c is string => Boolean(c))
       .every((c) => preview.columns.includes(c));
   if (preview.saved_mapping && fits(preview.saved_mapping)) {
@@ -142,4 +143,14 @@ export function buildCommit(
         category_id: categories[r.row_number] || null,
       })),
   };
+}
+
+/** Categories the file named and we recognised: row number → category id (pre-selected in review). */
+export function categoriesFromFile(rows: ParsedRow[]): Record<number, string> {
+  return Object.fromEntries(rows.filter((r) => r.category_id).map((r) => [r.row_number, r.category_id as string]));
+}
+
+/** Names in the file's category column that match none of your categories (shown as a warning). */
+export function unknownCategoryNames(rows: ParsedRow[]): string[] {
+  return [...new Set(rows.filter((r) => r.category_name && !r.category_id).map((r) => r.category_name as string))];
 }
