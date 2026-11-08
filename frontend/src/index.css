@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* Opt-in dark mode via a `.dark` class on <html> (not wired up yet). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens — the single source of truth for colours, radii and shadows.
+ * Raw values live on :root so a future `.dark { ... }` block can override them;
+ * the @theme block below maps them to Tailwind utilities (bg-page, text-ink, ...).
+ */
+:root {
+  /* Surfaces */
+  --page: #eef2f7;
+  --surface: #ffffff;
+  --surface-muted: #f3f6fb;
+  --line: #e3e9f2;
+
+  /* Sidebar / navigation */
+  --sidebar: #0c2547;
+  --sidebar-fg: rgb(255 255 255 / 0.7);
+  --sidebar-hover: rgb(255 255 255 / 0.08);
+  --sidebar-active: #8fd0ff;
+
+  /* Brand */
+  --primary: #1f4fd1;
+  --primary-hover: #1a42b0;
+  --primary-fg: #ffffff;
+  --secondary: #3b8cf2;
+  --accent: #bfe2ff;
+  --accent-hover: #a9d7ff;
+  --accent-fg: #0c2547;
+
+  /* Text */
+  --ink: #111111;
+  --muted: #6b7280;
+
+  /* Money */
+  --negative: #d93a35;
+  --positive: #1b8a5a;
+
+  /* Stat icon circles (soft tint + matching icon colour) */
+  --tint-indigo: #e9e8fd;
+  --tint-indigo-fg: #4f46e5;
+  --tint-sky: #e0f2fe;
+  --tint-sky-fg: #0284c7;
+  --tint-blue: #dde8fd;
+  --tint-blue-fg: #1f4fd1;
+  --tint-cyan: #dcf5f9;
+  --tint-cyan-fg: #0e7490;
+
+  /* Status pills */
+  --pill-overdue: #fde3e1;
+  --pill-overdue-fg: #c2413b;
+  --pill-paid: #1f4fd1;
+  --pill-paid-fg: #ffffff;
+  --pill-partpaid: #dbe8fe;
+  --pill-partpaid-fg: #1e40af;
+  --pill-duesoon: #fdefc8;
+  --pill-duesoon-fg: #9a5a06;
+
+  /* Charts — categorical order is fixed: series 1, then 2. Validated for CVD on white. */
+  --chart-1: #1f4fd1;
+  --chart-2: #0e9fb8;
+}
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-negative: var(--negative);
+  --color-positive: var(--positive);
+
+  --color-tint-indigo: var(--tint-indigo);
+  --color-tint-indigo-fg: var(--tint-indigo-fg);
+  --color-tint-sky: var(--tint-sky);
+  --color-tint-sky-fg: var(--tint-sky-fg);
+  --color-tint-blue: var(--tint-blue);
+  --color-tint-blue-fg: var(--tint-blue-fg);
+  --color-tint-cyan: var(--tint-cyan);
+  --color-tint-cyan-fg: var(--tint-cyan-fg);
+
+  --color-pill-overdue: var(--pill-overdue);
+  --color-pill-overdue-fg: var(--pill-overdue-fg);
+  --color-pill-paid: var(--pill-paid);
+  --color-pill-paid-fg: var(--pill-paid-fg);
+  --color-pill-partpaid: var(--pill-partpaid);
+  --color-pill-partpaid-fg: var(--pill-partpaid-fg);
+  --color-pill-duesoon: var(--pill-duesoon);
+  --color-pill-duesoon-fg: var(--pill-duesoon-fg);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+
+  --radius-card: 18px;
+  --shadow-card: 0 1px 2px rgb(12 37 71 / 0.04), 0 6px 20px rgb(12 37 71 / 0.06);
+}
+
+@theme {
+  --animate-sheet-up: sheet-up 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-pop-in: pop-in 160ms ease-out;
+
+  @keyframes sheet-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-page text-ink font-sans antialiased;
+  }
+  /* Stop the page scrolling behind an open modal / bottom sheet. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+}

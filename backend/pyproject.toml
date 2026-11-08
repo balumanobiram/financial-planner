@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+filterwarnings = [
+    # SQLAlchemy warnings usually mean a real ordering/session bug — fail the test instead.
+    "error::sqlalchemy.exc.SAWarning",
+]

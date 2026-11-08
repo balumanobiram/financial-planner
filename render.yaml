@@ -1,0 +1,32 @@
+# Render "Blueprint": Render reads this file to create and configure the backend service.
+# Dashboard → New → Blueprint → pick this repo. Secrets marked `sync: false` are asked for
+# once in the dashboard and never stored in git.
+services:
+  - type: web
+    name: planner-api
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: backend
+    # Migrations run on every deploy, so the database always matches the code.
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true # every push to the connected branch (main) redeploys
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.2
+      - key: ENVIRONMENT
+        value: production # hides /docs
+      - key: TRUST_PROXY
+        value: "true" # real client IP from X-Forwarded-For (see app/core/client_ip.py)
+      - key: JWT_SECRET
+        generateValue: true # Render creates a random secret once
+      - key: DATABASE_URL
+        sync: false # Neon MAIN branch, pooled, postgresql+psycopg://…
+      - key: APP_USERNAME
+        sync: false
+      - key: APP_PASSWORD_HASH
+        sync: false # from: python scripts/hash_password.py
+      - key: FRONTEND_ORIGIN
+        sync: false # your Vercel URL, e.g. https://planner-xyz.vercel.app (no trailing slash)
