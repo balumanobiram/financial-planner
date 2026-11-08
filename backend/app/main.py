@@ -12,7 +12,15 @@ def create_app() -> FastAPI:
     # Load settings eagerly so a missing env var fails at startup, not on first request.
     settings = get_settings()
 
-    app = FastAPI(title="Financial Planner API", version="0.1.0")
+    # In production the API's map (/docs, /openapi.json) isn't published; every endpoint still needs a login anyway.
+    docs = settings.environment != "production"
+    app = FastAPI(
+        title="Financial Planner API",
+        version="0.1.0",
+        docs_url="/docs" if docs else None,
+        redoc_url="/redoc" if docs else None,
+        openapi_url="/openapi.json" if docs else None,
+    )
     app.state.login_throttle = LoginThrottle()
 
     app.add_middleware(

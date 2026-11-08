@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.deps import CurrentUser, Now, SettingsDep
+from app.core.client_ip import client_ip
 from app.core.login_throttle import LoginThrottle
 from app.core.security import authenticate, create_access_token
 from app.schemas.auth import LoginRequest, MeResponse, TokenResponse
@@ -12,7 +13,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @public_router.post("/login")
 def login(body: LoginRequest, request: Request, settings: SettingsDep, now: Now) -> TokenResponse:
     throttle: LoginThrottle = request.app.state.login_throttle
-    client_key = request.client.host if request.client else "unknown"
+    client_key = client_ip(request, trust_proxy=settings.trust_proxy)
 
     if throttle.is_locked(client_key, now):
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many failed attempts. Try again later.")

@@ -6,6 +6,7 @@ values fail fast at startup instead of blowing up later at first use.
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -29,6 +30,11 @@ class Settings(BaseSettings):
     # Comma-separated if more than one, e.g. "http://localhost:5173,https://my-app.vercel.app"
     frontend_origin: str = "http://localhost:5173"
     app_timezone: str = "Asia/Kolkata"
+    # "production" hides the interactive API docs (/docs, /redoc, /openapi.json).
+    environment: Literal["development", "production"] = "development"
+    # True only behind a proxy that appends to X-Forwarded-For (Render). Locally it must stay
+    # False, or anyone could pick their own IP for the login lockout by sending that header.
+    trust_proxy: bool = False
 
     @property
     def cors_origins(self) -> list[str]:
