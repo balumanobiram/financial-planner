@@ -1,0 +1,168 @@
+# SMS ingest → inbox, against your LOCAL backend (Neon dev). Never point this at production.
+#
+# Needs the VS Code "REST Client" extension (humao.rest-client): click "Send Request" above each block.
+#   1. Start the backend:  cd backend; .venv\Scripts\Activate.ps1; uvicorn app.main:app --reload
+#   2. Set the last-4 digits below to one of your dev accounts and one of your dev cards,
+#      so the SMS get matched (otherwise they show "No account or card ending …").
+#   3. Send the /ingest requests, then log in and look at the inbox (or open /inbox in the app).
+#
+# The SMS texts are made-up generic wording, not real bank formats.
+
+@baseUrl = http://localhost:8000
+@accountLast4 = 1234
+@cardLast4 = 9876
+
+
+### 1. Debit from a bank account via UPI (→ pending expense, matched to your account)
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "Rs 250.00 sent from A/c XX{{accountLast4}} to chai.point@okhdfcbank on {{$datetime 'DD-MM-YY'}}. UPI Ref No {{$randomInt 100000000000 999999999999}}",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 2. Card spend at a shop (→ pending expense on your card)
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "Rs 1,800.00 spent on card x{{cardLast4}} at TOIT BREWPUB on {{$datetime 'DD-MM-YY'}}. Avl Lmt Rs 45,000",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 3. Money received (→ pending income; approve it as "Friend paid me back" to settle a split)
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "Rs 900.00 received in A/c XX{{accountLast4}} from ravi@okaxis. UPI Ref {{$randomInt 100000000000 999999999999}}",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 4. Credit-card bill payment (→ suggested as "Card bill", not income/expense)
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "Payment of Rs 5,000.00 received towards your credit card XX{{cardLast4}}. Thank you",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 5. UPI collect request — no money moved (→ "Not money" tab, never in the inbox)
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "shop@okaxis has requested Rs 500 from you. Approve in your UPI app",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 6. Bill reminder — no money moved (→ "Not money")
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "Your credit card bill of Rs 12,000 is due on 25-11-2026",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 7. OTP — answered {"ok": true} but NOT stored at all
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "123456 is your OTP for a payment of Rs 500. Do not share it",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 8. Unknown card (→ pending, flagged "No account or card ending 5555")
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "Rs 99.00 spent on card x5555 at SOME SHOP",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 9a. Exact repeat: send this one TWICE within the same minute → stored once
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "Rs 42.00 debited from A/c XX{{accountLast4}} at TEA STALL",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 9b. Possible duplicate: same amount + same last 4 within 10 min, different wording → flagged, not deleted
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "Rs 42.00 spent using A/c XX{{accountLast4}} at TEA STALL PVT",
+  "sender": "AX-TESTBK",
+  "received_at": "{{$datetime iso8601}}"
+}
+
+### 10. Full card number in the text → saved masked as XXXXXXXXXXXX1234
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "Rs 10.00 spent on card 4111 1111 1111 {{cardLast4}} at TEST MERCHANT",
+  "sender": "AX-TESTBK"
+}
+
+### 11. Text over 1000 characters → 422 (the text is not echoed back)
+POST {{baseUrl}}/ingest
+Content-Type: application/json
+
+{
+  "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}
+
+### 12. Only "create": anything but POST is refused (405)
+GET {{baseUrl}}/ingest
+
+
+# ---------------------------------------------------------------------------------------------
+# Look at the result. Log in first: REST Client asks for your username and password when you
+# send this (nothing is saved in this file). The token is reused by the requests below.
+# ---------------------------------------------------------------------------------------------
+
+### Log in
+# @name login
+# @prompt username
+# @prompt password
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+### Inbox: waiting for review (newest first)
+GET {{baseUrl}}/inbox
+Authorization: Bearer {{login.response.body.access_token}}
+
+### Inbox: rejected ("Not money": requests, reminders)
+GET {{baseUrl}}/inbox?status=rejected
+Authorization: Bearer {{login.response.body.access_token}}
+
+### Inbox: ignored (incl. repeats of an earlier UPI ref)
+GET {{baseUrl}}/inbox?status=ignored
+Authorization: Bearer {{login.response.body.access_token}}
+
+### Pending count + when the last SMS arrived (nav badge / 3-day banner)
+GET {{baseUrl}}/inbox/summary
+Authorization: Bearer {{login.response.body.access_token}}

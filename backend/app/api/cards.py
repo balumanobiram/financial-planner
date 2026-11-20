@@ -9,9 +9,10 @@ from sqlalchemy.orm import Session
 from app.api.deps import DbSession, Fetcher, Now, Today
 from app.models import BankLogo, CreditCard
 from app.schemas.credit_card import BillingRead, CreditCardCreate, CreditCardList, CreditCardRead, CreditCardUpdate
+from app.schemas.logo import LogoUpload
 from app.services import cards as service
 from app.services.billing import billing_cycle
-from app.services.logos import logos_by_domain, to_data_url
+from app.services.logos import logos_by_domain, to_data_url, upload_logo
 from app.services.transactions import card_outstanding
 
 router = APIRouter(prefix="/cards", tags=["cards"])
@@ -88,5 +89,14 @@ def refresh_logo(card_id: uuid.UUID, db: DbSession, today: Today, now: Now, fetc
     """Re-download the bank's icon (e.g. after the bank changed its logo)."""
     card = service.get_card(db, card_id)
     service.refresh_logo(db, card, fetcher)
+    db.commit()
+    return _read_one(db, card, today, now)
+
+
+@router.put("/{card_id}/logo")
+def put_logo(card_id: uuid.UUID, body: LogoUpload, db: DbSession, today: Today, now: Now) -> CreditCardRead:
+    """Use your own image as the bank's logo (shared by every account and card of that bank)."""
+    card = service.get_card(db, card_id)
+    upload_logo(db, card, body.content_base64)
     db.commit()
     return _read_one(db, card, today, now)

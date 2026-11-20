@@ -2,10 +2,12 @@ import { Check } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 
 import { CARD_NETWORKS, useSaveCard, type CreditCard, type CreditCardInput } from "../../api/cards";
+import { useUploadLogo } from "../../api/logos";
 import { CreditCardVisual } from "../../components/cards/CreditCardVisual";
 import { NetworkMark } from "../../components/cards/NetworkMark";
 import { Button } from "../../components/ui/Button";
 import { SelectField, TextAreaField, TextField } from "../../components/ui/Field";
+import { LogoUploadField } from "../../components/ui/LogoUploadField";
 import { Modal } from "../../components/ui/Modal";
 import { Notice } from "../../components/ui/Notice";
 import { cn } from "../../lib/cn";
@@ -80,6 +82,8 @@ type CardFormProps = {
 function CardForm({ formId, card, serverError, onSubmit }: CardFormProps) {
   const [values, setValues] = useState<CardFormValues>(() => initialCardValues(card));
   const [errors, setErrors] = useState<CardFormErrors>({});
+  const uploadLogo = useUploadLogo("cards");
+  const [logo, setLogo] = useState(card?.logo_data_url ?? null);
 
   const set = <K extends keyof CardFormValues>(key: K, value: CardFormValues[K]) => {
     setValues((v) => ({ ...v, [key]: value }));
@@ -94,7 +98,7 @@ function CardForm({ formId, card, serverError, onSubmit }: CardFormProps) {
   };
 
   // Keep showing the stored logo in the preview while the bank is unchanged.
-  const previewLogo = card && card.bank_name === values.bank_name.trim() ? card.logo_data_url : null;
+  const previewLogo = card && card.bank_name === values.bank_name.trim() ? logo : null;
 
   return (
     <form id={formId} onSubmit={handleSubmit} noValidate className="space-y-5 pb-2">
@@ -261,6 +265,18 @@ function CardForm({ formId, card, serverError, onSubmit }: CardFormProps) {
         error={errors.bank_domain}
         hint={errors.bank_domain ? undefined : "e.g. hdfcbank.com — leave empty to detect it automatically."}
       />
+
+      {card && (
+        <LogoUploadField
+          bankName={card.bank_name}
+          logo={logo}
+          uploading={uploadLogo.isPending}
+          error={uploadLogo.isError ? uploadLogo.error.message : undefined}
+          onUpload={(contentBase64) =>
+            uploadLogo.mutate({ id: card.id, contentBase64 }, { onSuccess: (updated) => setLogo(updated.logo_data_url) })
+          }
+        />
+      )}
 
       <TextAreaField
         label="Notes"

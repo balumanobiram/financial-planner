@@ -5,6 +5,7 @@ import { useMe } from "../../api/auth";
 import { APP_NAME } from "../../config";
 import { cn } from "../../lib/cn";
 import { NAV_ITEMS, type NavItem } from "./nav";
+import { NavBadge } from "./NavBadge";
 
 type SidebarProps = { collapsed: boolean; onToggle: () => void };
 
@@ -89,8 +90,16 @@ function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean })
         )
       }
     >
-      <Icon className="size-5 shrink-0" aria-hidden />
-      {!collapsed && label}
+      <span className="relative">
+        <Icon className="size-5 shrink-0" aria-hidden />
+        {collapsed && <NavBadge to={item.to} className="absolute -top-2 -right-2.5 h-4 min-w-4 px-1 text-[10px]" />}
+      </span>
+      {!collapsed && (
+        <>
+          {label}
+          <NavBadge to={item.to} className="ml-auto" />
+        </>
+      )}
     </NavLink>
   );
 }

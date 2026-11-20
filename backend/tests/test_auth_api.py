@@ -61,6 +61,16 @@ def test_cors_allows_frontend_origin_only(client: TestClient) -> None:
     assert "access-control-allow-origin" not in preflight("https://evil.example").headers
 
 
+def test_cors_allows_every_method_the_frontend_uses(client: TestClient) -> None:
+    """A method missing here works in tests (same origin) but fails in the browser, e.g. PUT for logo upload."""
+    for method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
+        response = client.options(
+            "/accounts/x/logo",
+            headers={"Origin": "http://localhost:5173", "Access-Control-Request-Method": method},
+        )
+        assert response.status_code == 200, method
+
+
 def test_cors_exposes_download_filename(client: TestClient) -> None:
     """The frontend (another origin) must be able to read the PDF filename from Content-Disposition."""
     response = client.get("/health", headers={"Origin": "http://localhost:5173"})

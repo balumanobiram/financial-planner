@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { ColumnMapping, ImportPreview, ParsedRow } from "../../api/imports";
+import { base64FromDataUrl } from "../../lib/files";
 import {
-  base64FromDataUrl,
   blankMapping,
   buildCommit,
   categoriesFromFile,

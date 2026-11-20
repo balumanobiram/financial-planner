@@ -5,6 +5,7 @@ import { NavLink, useLocation } from "react-router";
 import { cn } from "../../lib/cn";
 import { Modal } from "../ui/Modal";
 import { MOBILE_TABS, MORE_ITEMS } from "./nav";
+import { NavBadge } from "./NavBadge";
 
 const tabClass = (active: boolean) =>
   cn(
@@ -28,7 +29,10 @@ export function BottomNav() {
           {MOBILE_TABS.map(({ to, label, icon: Icon }) => (
             <li key={to}>
               <NavLink to={to} end={to === "/"} className={({ isActive }) => tabClass(isActive)}>
-                <Icon className="size-5" aria-hidden />
+                <span className="relative">
+                  <Icon className="size-5" aria-hidden />
+                  <NavBadge to={to} className="absolute -top-1.5 -right-3 h-4 min-w-4 px-1 text-[10px]" />
+                </span>
                 {label}
               </NavLink>
             </li>

@@ -1,8 +1,10 @@
 import { useId, useState, type FormEvent } from "react";
 
 import { ACCOUNT_TYPES, useSaveAccount, type AccountType, type BankAccount } from "../../api/accounts";
+import { useUploadLogo } from "../../api/logos";
 import { Button } from "../../components/ui/Button";
 import { SelectField, TextAreaField, TextField } from "../../components/ui/Field";
+import { LogoUploadField } from "../../components/ui/LogoUploadField";
 import { Modal } from "../../components/ui/Modal";
 import { Notice } from "../../components/ui/Notice";
 import { todayIST } from "../../lib/dates";
@@ -71,6 +73,8 @@ type AccountFormProps = {
 function AccountForm({ formId, account, serverError, onSubmit }: AccountFormProps) {
   const [values, setValues] = useState<AccountFormValues>(() => initialValues(account));
   const [errors, setErrors] = useState<AccountFormErrors>({});
+  const uploadLogo = useUploadLogo("accounts");
+  const [logo, setLogo] = useState(account?.logo_data_url ?? null);
 
   const set = <K extends keyof AccountFormValues>(key: K, value: AccountFormValues[K]) => {
     setValues((v) => ({ ...v, [key]: value }));
@@ -161,6 +165,18 @@ function AccountForm({ formId, account, serverError, onSubmit }: AccountFormProp
         error={errors.bank_domain}
         hint={errors.bank_domain ? undefined : "e.g. hdfcbank.com — leave empty to detect it automatically."}
       />
+
+      {account && (
+        <LogoUploadField
+          bankName={account.bank_name}
+          logo={logo}
+          uploading={uploadLogo.isPending}
+          error={uploadLogo.isError ? uploadLogo.error.message : undefined}
+          onUpload={(contentBase64) =>
+            uploadLogo.mutate({ id: account.id, contentBase64 }, { onSuccess: (updated) => setLogo(updated.logo_data_url) })
+          }
+        />
+      )}
 
       <TextAreaField
         label="Notes"
