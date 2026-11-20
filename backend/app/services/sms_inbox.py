@@ -67,7 +67,13 @@ def process_safely(session_factory: SessionFactory, sms_id: uuid.UUID) -> None:
 def process_unparsed(session: Session, limit: int = 50) -> int:
     """Parse anything the background task never got to (e.g. Render restarted mid-way)."""
     ids = list(
-        session.scalars(select(SmsMessage.id).where(SmsMessage.parsed_at.is_(None)).order_by(SmsMessage.received_at).limit(limit))
+        session.scalars(
+            select(SmsMessage.id)
+            .where(SmsMessage.parsed_at.is_(None))
+            .order_by(SmsMessage.received_at)
+            .limit(limit)
+            .with_for_update(skip_locked=True)
+        )
     )
     for sms_id in ids:
         process(session, sms_id)
@@ -75,8 +81,12 @@ def process_unparsed(session: Session, limit: int = 50) -> int:
 
 
 def process(session: Session, sms_id: uuid.UUID) -> None:
-    sms = session.get(SmsMessage, sms_id)
-    if sms is None or sms.parsed_at is not None:
+    # Lock the row; if the background task and an inbox refresh reach the same SMS at once, the
+    # second one skips it instead of waiting and parsing it twice (≈ a job queue's SKIP LOCKED).
+    sms = session.scalar(
+        select(SmsMessage).where(SmsMessage.id == sms_id, SmsMessage.parsed_at.is_(None)).with_for_update(skip_locked=True)
+    )
+    if sms is None:
         return
     parsed = sms_parser.parse(sms.text, sms.sender)
     sms.parsed_at = datetime.now(UTC)
