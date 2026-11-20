@@ -70,6 +70,7 @@ export type TransactionUpdate = Partial<{
   tags: string[];
   category_id: string | null;
   source: { account_id: string } | { card_id: string };
+  shares: Array<{ person_id: string; amount: string }>; // replaces the whole split ([] removes it)
 }>;
 
 const PAGE_SIZE = 30;

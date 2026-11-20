@@ -63,6 +63,7 @@ class Transaction(BaseEntity):
         Index("ix_transactions_occurred_at_id", "occurred_at", "id"),  # newest-first paging
         Index("ix_transactions_category_id", "category_id"),
         Index("ix_transactions_link_id", "link_id"),
+        Index("ix_transactions_sms_message_id", "sms_message_id"),
     )
 
     account_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("bank_accounts.id", ondelete="RESTRICT"))
@@ -72,6 +73,11 @@ class Transaction(BaseEntity):
     category_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("categories.id", ondelete="RESTRICT"))
     # Both halves of a transfer / card payment share this id.
     link_id: Mapped[uuid.UUID | None]
+    # The inbox SMS this was approved from (one SMS can become several rows, e.g. split by category).
+    # use_alter: sms_messages also points at transactions (duplicate flag), so this FK is added after both tables exist.
+    sms_message_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sms_messages.id", ondelete="SET NULL", use_alter=True)
+    )
     kind: Mapped[TransactionKind] = mapped_column(str_enum(TransactionKind, "transaction_kind"))
     amount: Mapped[Money]  # signed — see module docstring
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

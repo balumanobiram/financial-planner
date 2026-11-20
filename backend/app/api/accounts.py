@@ -16,9 +16,10 @@ from app.schemas.bank_account import (
     ReconcileRequest,
     ReconcileResponse,
 )
+from app.schemas.logo import LogoUpload
 from app.services import accounts as service
 from app.services.balances import account_balance, account_balances, reconcile
-from app.services.logos import logos_by_domain, to_data_url
+from app.services.logos import logos_by_domain, to_data_url, upload_logo
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -103,5 +104,14 @@ def refresh_logo(account_id: uuid.UUID, db: DbSession, now: Now, fetcher: Fetche
     """Fetch (or re-fetch) the bank's icon; guesses the website from the bank name if it's not set."""
     account = service.get_account(db, account_id)
     service.refresh_logo(db, account, fetcher)
+    db.commit()
+    return _read_one(db, account, now)
+
+
+@router.put("/{account_id}/logo")
+def put_logo(account_id: uuid.UUID, body: LogoUpload, db: DbSession, now: Now) -> BankAccountRead:
+    """Use your own image as the bank's logo (shared by every account and card of that bank)."""
+    account = service.get_account(db, account_id)
+    upload_logo(db, account, body.content_base64)
     db.commit()
     return _read_one(db, account, now)

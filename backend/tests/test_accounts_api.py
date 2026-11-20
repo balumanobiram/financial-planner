@@ -1,5 +1,6 @@
 """Bank account API end to end (HTTP → service → Neon dev, rolled back after each test)."""
 
+import base64
 from typing import Any
 
 from fastapi.testclient import TestClient
@@ -7,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from tests.conftest import FakeFetcher
+from tests.test_logos import image_bytes
 
 NEW_ACCOUNT = {
     "bank_name": "HDFC Bank",
@@ -167,6 +169,36 @@ class TestBankLogo:
 
         assert refreshed["bank_domain"] == "hdfcbank.com"
         assert refreshed["logo_data_url"] is not None
+
+    def test_uploaded_logo_replaces_fetched_one_for_the_whole_bank(self, api: TestClient, fetcher: FakeFetcher) -> None:
+        account = create(api, bank_name="Axis Bank")
+        card = api.post(
+            "/cards",
+            json={"bank_name": "Axis Bank", "card_name": "Ace", "network": "visa", "statement_day": 12, "payment_due_days": 20},
+        ).json()
+        fetched = card["logo_data_url"]
+
+        upload = {"content_base64": base64.b64encode(image_bytes((400, 400), "JPEG", box=(50, 100, 350, 300))).decode()}
+        updated = api.put(f"/cards/{card['id']}/logo", json=upload)
+
+        assert updated.status_code == 200, updated.text
+        new_logo = updated.json()["logo_data_url"]
+        assert new_logo.startswith("data:image/png;base64,") and new_logo != fetched
+        assert api.get(f"/accounts/{account['id']}").json()["logo_data_url"] == new_logo  # same bank → same logo
+
+    def test_upload_needs_a_bank_website(self, api: TestClient) -> None:
+        account = create(api, bank_name="Local Co-op")
+        upload = {"content_base64": base64.b64encode(image_bytes((40, 40), box=(5, 5, 30, 30))).decode()}
+
+        response = api.put(f"/accounts/{account['id']}/logo", json=upload)
+
+        assert response.status_code == 422
+        assert "website" in response.text
+
+    def test_upload_rejects_non_image(self, api: TestClient) -> None:
+        account = create(api)
+        response = api.put(f"/accounts/{account['id']}/logo", json={"content_base64": base64.b64encode(b"hello").decode()})
+        assert response.status_code == 422
 
     def test_invalid_website_rejected(self, api: TestClient) -> None:
         assert api.post("/accounts", json={**NEW_ACCOUNT, "bank_domain": "not a site"}).status_code == 422

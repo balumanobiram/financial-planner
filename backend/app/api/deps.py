@@ -12,10 +12,11 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
-from app.core.db import get_db
+from app.core.db import SessionLocal, get_db
 from app.core.security import decode_access_token
 from app.core.time import today_ist
 from app.services.logos import LogoFetcher, fetch_logo
+from app.services.sms_inbox import SessionFactory
 
 
 def get_now() -> datetime:
@@ -40,6 +41,15 @@ def get_logo_fetcher() -> LogoFetcher:
 
 
 Fetcher = Annotated[LogoFetcher, Depends(get_logo_fetcher)]
+
+
+def get_session_factory() -> SessionFactory:
+    """Sessions for work that runs after the response (background tasks), when the request's
+    own session is already closed. Tests override this to reuse their rolled-back session."""
+    return SessionLocal
+
+
+BackgroundSessions = Annotated[SessionFactory, Depends(get_session_factory)]
 DbSession = Annotated[Session, Depends(get_db)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 

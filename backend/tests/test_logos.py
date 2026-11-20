@@ -1,15 +1,24 @@
 """Logo helpers. HTTP is simulated with httpx2.MockTransport — no real network calls."""
 
+import base64
+import io
+
 import httpx2
 import pytest
+from PIL import Image
 from sqlalchemy.orm import Session
 
+from app.services.errors import InvalidInputError
 from app.services.logos import (
+    LOGO_PIXELS,
     MAX_LOGO_BYTES,
+    MAX_UPLOAD_BYTES,
+    decode_upload,
     fetch_logo,
     get_or_fetch_logo,
     guess_bank_domain,
     normalize_domain,
+    process_upload,
     to_data_url,
 )
 
@@ -114,3 +123,49 @@ class TestStoredLogos:
 
     def test_failed_first_fetch_stores_nothing(self, db_session: Session) -> None:
         assert get_or_fetch_logo(db_session, "unknown-bank.in", lambda _: None) is None
+
+
+def image_bytes(size: tuple[int, int], fmt: str = "PNG", box: tuple[int, int, int, int] | None = None, background: str = "white") -> bytes:
+    """A test "logo": a maroon rectangle at `box` on a plain background."""
+    image = Image.new("RGBA", size, background)
+    if box:
+        image.paste((151, 20, 77, 255), box)
+    out = io.BytesIO()
+    image.convert("RGB" if fmt == "JPEG" else "RGBA").save(out, format=fmt)
+    return out.getvalue()
+
+
+def opened(png: bytes) -> Image.Image:
+    image = Image.open(io.BytesIO(png))
+    assert image.format == "PNG"
+    return image
+
+
+class TestUploadedLogos:
+    def test_trims_white_margins_and_keeps_the_shape(self) -> None:
+        # 1000×800 photo with the logo in a 400×200 area in the middle.
+        logo = opened(process_upload(image_bytes((1000, 800), "JPEG", box=(300, 300, 700, 500))))
+        assert logo.size == (LOGO_PIXELS, LOGO_PIXELS // 2)
+
+    def test_trims_transparent_margins(self) -> None:
+        logo = opened(process_upload(image_bytes((300, 300), box=(100, 100, 200, 150), background="#00000000")))
+        assert logo.size == (100, 50)  # small images are never enlarged (they'd only get blurry)
+
+    def test_rejects_blank_image(self) -> None:
+        with pytest.raises(InvalidInputError, match="blank"):
+            process_upload(image_bytes((50, 50)))
+
+    @pytest.mark.parametrize("data", [b"<svg xmlns='http://www.w3.org/2000/svg'/>", b"%PDF-1.7 not an image", PNG])
+    def test_rejects_non_images(self, data: bytes) -> None:
+        with pytest.raises(InvalidInputError):
+            process_upload(data)
+
+    def test_rejects_unsupported_format(self) -> None:
+        with pytest.raises(InvalidInputError, match="PNG, JPG"):
+            process_upload(image_bytes((20, 20), "TIFF", box=(0, 0, 10, 10)))
+
+    def test_decode_limits(self) -> None:
+        assert decode_upload(base64.b64encode(b"abc").decode()) == b"abc"
+        for bad in ["not base64!", "", base64.b64encode(b"x" * (MAX_UPLOAD_BYTES + 1)).decode()]:
+            with pytest.raises(InvalidInputError):
+                decode_upload(bad)

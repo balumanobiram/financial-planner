@@ -9,6 +9,7 @@ from app.models.expense_share import ExpenseShare
 from app.models.import_mapping import ImportMapping
 from app.models.monthly_snapshot import MonthlySnapshot
 from app.models.person import Person
+from app.models.sms_message import MerchantRule, SmsMessage, SmsStatus
 from app.models.transaction import Transaction, TransactionKind
 
 __all__ = [
@@ -22,8 +23,11 @@ __all__ = [
     "CreditCard",
     "ExpenseShare",
     "ImportMapping",
+    "MerchantRule",
     "MonthlySnapshot",
     "Person",
+    "SmsMessage",
+    "SmsStatus",
     "Transaction",
     "TransactionKind",
 ]

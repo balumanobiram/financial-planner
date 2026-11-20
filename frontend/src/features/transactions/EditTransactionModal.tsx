@@ -4,6 +4,7 @@ import { useId, useState, type FormEvent } from "react";
 import { useAccounts } from "../../api/accounts";
 import { useCards } from "../../api/cards";
 import { useCategories } from "../../api/categories";
+import { usePeople } from "../../api/people";
 import { useDeleteTransaction, useUpdateTransaction, type Transaction } from "../../api/transactions";
 import { Button } from "../../components/ui/Button";
 import { SelectField, TextField } from "../../components/ui/Field";
@@ -11,6 +12,9 @@ import { Modal } from "../../components/ui/Modal";
 import { Notice } from "../../components/ui/Notice";
 import { formatDateTime, todayIST } from "../../lib/dates";
 import { formatINR } from "../../lib/money";
+import { Chip } from "./pickers";
+import { peopleSplit, sharesChanged, type PersonRow, type SplitUnit } from "./split";
+import { SplitEditor } from "./SplitEditor";
 import { buildUpdate, editableFields, initialEditValues, TYPE_LABELS, type EditErrors, type EditValues } from "./transactionForm";
 
 type Props = { txn: Transaction | null; onClose: () => void; onDone: (message: string) => void };
@@ -124,6 +128,7 @@ function EditForm({
   const accounts = useAccounts();
   const cards = useCards();
   const categories = useCategories();
+  const people = usePeople();
   const can = editableFields(txn.type);
   const [values, setValues] = useState<EditValues>(() => initialEditValues(txn));
   const [errors, setErrors] = useState<EditErrors>({});
@@ -132,11 +137,28 @@ function EditForm({
     setErrors((e) => ({ ...e, [key]: undefined }));
   };
 
+  // Split with people: any expense (money out) can be split, re-split, or un-split here.
+  const canSplit = txn.type === "expense" && values.direction === "debit";
+  const [splitOn, setSplitOn] = useState(txn.shares.length > 0);
+  const [splitRows, setSplitRows] = useState<PersonRow[]>(() =>
+    txn.shares.length ? txn.shares.map((s) => ({ person_id: s.person_id, value: s.amount })) : [{ person_id: "", value: "" }],
+  );
+  const [splitUnit, setSplitUnit] = useState<SplitUnit>("amount");
+  const [tried, setTried] = useState(false);
+  const split = peopleSplit(values.amount, splitRows, splitUnit);
+  const splitInvalid = Boolean(split.error) || Object.keys(split.rowErrors).length > 0;
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    setTried(true);
     const result = buildUpdate(txn, values, todayIST());
     setErrors(result.errors);
-    if (result.input) onSubmit(result.input);
+    if (!result.input) return;
+    const before = txn.shares.map((s) => ({ person_id: s.person_id, amount: s.amount }));
+    if (canSplit && splitOn && splitInvalid) return;
+    const after = canSplit && splitOn ? split.shares : [];
+    if (sharesChanged(before, after)) result.input.shares = after;
+    onSubmit(result.input);
   };
 
   // Archived sources stay selectable only if this entry already uses them.
@@ -222,19 +244,41 @@ function EditForm({
         <TextField label="Tags" placeholder="work, trip" autoCapitalize="none" value={values.tags} onChange={(e) => set("tags", e.target.value)} error={errors.tags} />
       </div>
 
-      {txn.shares.length > 0 && (
-        <div className="rounded-xl border border-line px-3.5 py-3 text-sm">
-          <p className="font-medium">Split</p>
-          <ul className="mt-1 space-y-0.5 text-muted">
-            {txn.shares.map((s) => (
-              <li key={s.person_id} className="flex justify-between gap-3">
-                <span>{s.person_name}</span>
-                <span className="tabular-nums">{formatINR(s.amount)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-xs text-muted">The amount can't go below the shares. To change who owes what, delete and re-add it.</p>
+      {canSplit ? (
+        <div className="space-y-2">
+          <Chip selected={splitOn} onClick={() => setSplitOn(!splitOn)}>
+            Split with people
+          </Chip>
+          {splitOn && (
+            <SplitEditor
+              total={values.amount}
+              people={(people.data?.items ?? []).filter((p) => !p.is_archived || splitRows.some((r) => r.person_id === p.id))}
+              rows={splitRows}
+              unit={splitUnit}
+              result={split}
+              showErrors={tried}
+              onChange={(rows, unit) => {
+                setSplitRows(rows);
+                setSplitUnit(unit);
+              }}
+            />
+          )}
+          {!splitOn && txn.shares.length > 0 && <p className="text-xs text-muted">Saving removes the split — people will no longer owe you their share.</p>}
         </div>
+      ) : (
+        txn.shares.length > 0 && (
+          <div className="rounded-xl border border-line px-3.5 py-3 text-sm">
+            <p className="font-medium">Split</p>
+            <ul className="mt-1 space-y-0.5 text-muted">
+              {txn.shares.map((s) => (
+                <li key={s.person_id} className="flex justify-between gap-3">
+                  <span>{s.person_name}</span>
+                  <span className="tabular-nums">{formatINR(s.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
       )}
       {txn.person && txn.type !== "expense" && (
         <p className="text-sm text-muted">

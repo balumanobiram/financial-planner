@@ -15,12 +15,6 @@ export function checkFile(file: { name: string; size: number }): string | null {
   return null;
 }
 
-/** "data:text/csv;base64,AAAA" → "AAAA" (what FileReader.readAsDataURL gives us). */
-export function base64FromDataUrl(dataUrl: string): string {
-  const comma = dataUrl.indexOf(",");
-  return comma === -1 ? "" : dataUrl.slice(comma + 1);
-}
-
 /** "account:<id>" / "card:<id>" → API source. */
 export function importSource(value: string): ImportSource | null {
   const [kind, id] = value.split(":");

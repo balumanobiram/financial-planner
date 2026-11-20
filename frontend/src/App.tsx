@@ -20,6 +20,7 @@ const router = createBrowserRouter([
       // Lazy like the other pages; it also pulls in the chart library, which the login page doesn't need.
       { index: true, lazy: async () => ({ Component: (await import("./features/dashboard/DashboardPage")).DashboardPage }) },
       // Each page is its own chunk, downloaded the first time you open it (keeps the first load small).
+      { path: "inbox", lazy: async () => ({ Component: (await import("./features/inbox/InboxPage")).InboxPage }) },
       { path: "accounts", lazy: async () => ({ Component: (await import("./features/accounts/AccountsPage")).AccountsPage }) },
       { path: "cards", lazy: async () => ({ Component: (await import("./features/cards/CardsPage")).CardsPage }) },
       { path: "people", lazy: async () => ({ Component: (await import("./features/people/PeoplePage")).PeoplePage }) },

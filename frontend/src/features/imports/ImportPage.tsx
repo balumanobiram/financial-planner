@@ -20,7 +20,8 @@ import { SelectField } from "../../components/ui/Field";
 import { Notice } from "../../components/ui/Notice";
 import { cn } from "../../lib/cn";
 import { saveBlob } from "../../lib/download";
-import { base64FromDataUrl, checkFile, defaultSelection, importSource, initialMapping } from "./importForm";
+import { readAsBase64 } from "../../lib/files";
+import { checkFile, defaultSelection, importSource, initialMapping } from "./importForm";
 import { MappingStep } from "./MappingStep";
 import { ReviewStep } from "./ReviewStep";
 
@@ -31,15 +32,6 @@ const STEPS: Array<{ key: Exclude<Step, "done">; label: string }> = [
   { key: "map", label: "Columns" },
   { key: "review", label: "Review" },
 ];
-
-function readAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(base64FromDataUrl(String(reader.result)));
-    reader.onerror = () => reject(reader.error ?? new Error("Couldn't read the file"));
-    reader.readAsDataURL(file);
-  });
-}
 
 /**
  * Statement import wizard. The file lives only in this component's memory (as base64) and is
