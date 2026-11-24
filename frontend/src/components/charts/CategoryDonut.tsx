@@ -8,7 +8,7 @@ import { formatINR, toPaise } from "../../lib/money";
  * entity, not its rank), slices are separated by a 2px surface gap, and the legend
  * always names every slice with its % — so identity never depends on colour alone.
  */
-export function CategoryDonut({ slices, total }: { slices: CategorySlice[]; total: string }) {
+export function CategoryDonut({ slices, total, centerLabel = "Spent" }: { slices: CategorySlice[]; total: string; centerLabel?: string }) {
   const data = slices.map((s) => ({ ...s, value: Number(toPaise(s.amount)) / 100 }));
 
   return (
@@ -25,7 +25,7 @@ export function CategoryDonut({ slices, total }: { slices: CategorySlice[]; tota
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
-          <span className="text-[11px] text-muted">Spent</span>
+          <span className="text-[11px] text-muted">{centerLabel}</span>
           <span className="text-base font-bold tabular-nums">{formatINR(total, { showDecimals: false })}</span>
         </div>
       </div>

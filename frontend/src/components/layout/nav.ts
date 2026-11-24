@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  Calculator,
   ChartColumn,
   CreditCard,
   Landmark,
@@ -26,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "People", to: "/people", icon: Users },
   { label: "Transactions", to: "/transactions", icon: ArrowLeftRight },
   { label: "Reports", to: "/reports", icon: ChartColumn },
+  { label: "Plan", to: "/plan", icon: Calculator },
   { label: "Settings", to: "/settings", icon: Settings },
 ];
 
