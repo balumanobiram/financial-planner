@@ -3,6 +3,7 @@
 from app.models.bank_account import AccountType, BankAccount
 from app.models.bank_logo import BankLogo
 from app.models.base import Base
+from app.models.budget_plan import BudgetPlan, BudgetPlanItem, PlanGroup
 from app.models.category import Category, CategoryKind
 from app.models.credit_card import CardNetwork, CreditCard
 from app.models.expense_share import ExpenseShare
@@ -17,6 +18,8 @@ __all__ = [
     "BankAccount",
     "BankLogo",
     "Base",
+    "BudgetPlan",
+    "BudgetPlanItem",
     "CardNetwork",
     "Category",
     "CategoryKind",
@@ -26,6 +29,7 @@ __all__ = [
     "MerchantRule",
     "MonthlySnapshot",
     "Person",
+    "PlanGroup",
     "SmsMessage",
     "SmsStatus",
     "Transaction",

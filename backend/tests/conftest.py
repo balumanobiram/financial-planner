@@ -51,6 +51,7 @@ from app.main import create_app  # noqa: E402
 from app.models import (  # noqa: E402
     BankAccount,
     BankLogo,
+    BudgetPlan,
     CreditCard,
     ExpenseShare,
     ImportMapping,
@@ -96,7 +97,7 @@ def db_session() -> Iterator[Session]:
     with engine.connect() as connection:
         outer = connection.begin()
         session = Session(bind=connection, join_transaction_mode="create_savepoint", expire_on_commit=False)
-        for model in (ExpenseShare, Transaction, SmsMessage, MerchantRule, ImportMapping, MonthlySnapshot, BankAccount, CreditCard, BankLogo, Person):
+        for model in (BudgetPlan, ExpenseShare, Transaction, SmsMessage, MerchantRule, ImportMapping, MonthlySnapshot, BankAccount, CreditCard, BankLogo, Person):
             session.execute(delete(model))
         try:
             yield session
